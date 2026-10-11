@@ -113,7 +113,9 @@
       <button class="mini-button" data-action="delete-task" data-type="${type}" data-parent="${parentId}" data-id="${task.id}" aria-label="Удалить задание">×</button></span></li>`;
   }
   function renderSchedule() {
-    const root = $("scheduleList"); root.replaceChildren();
+    const root = $("scheduleList");
+    const previouslyOpen = new Set([...root.querySelectorAll(".subject-details[open]")].map(d=>d.dataset.subjectId));
+    root.replaceChildren();
     const week = currentWeek();
     if (!week.subjects.length) {
       const empty = document.createElement("p"); empty.className="empty-note";
@@ -130,14 +132,29 @@
         const card = document.createElement("article"); card.className="subject-card";
         const place = s.placeType === "remote" ? "Дистанционно" : (s.place || "Аудитория не указана");
         const extra = [s.kind,place,s.link].filter(Boolean).join(" · ");
-        card.innerHTML = `<div class="subject-top"><div class="subject-main"><h3 class="subject-name">${escapeText(s.name)}</h3>
-          <div class="subject-meta">${escapeText(s.start)}–${escapeText(s.end)} · ${escapeText(extra)}${s.weekType!=="каждую"?" · "+escapeText(s.weekType):""}</div></div>
-          <div class="subject-actions"><button class="mini-button" data-action="edit-subject" data-id="${s.id}" title="Изменить" aria-label="Изменить предмет">✎</button>
-          <button class="mini-button" data-action="copy-subject" data-id="${s.id}" title="Копировать" aria-label="Копировать предмет">⧉</button>
-          <button class="mini-button" data-action="delete-subject" data-id="${s.id}" title="Удалить" aria-label="Удалить предмет">×</button></div></div>
-          <div class="task-area"><p class="task-heading">Задания</p><ul class="task-list">${s.tasks.map(t=>taskMarkup(t,"subject",s.id)).join("") || '<li class="muted">Заданий пока нет.</li>'}</ul>
-          <div class="add-task-row"><input data-role="new-subject-task" data-id="${s.id}" placeholder="Что нужно сделать к занятию?" aria-label="Новое задание"><button class="primary-button" data-action="add-subject-task" data-id="${s.id}">Добавить</button></div></div>
-          <div class="note-area">${s.note ? `<button class="note-toggle" data-action="toggle-note" data-id="${s.id}">Показать пометку ▾</button><button class="note-toggle" data-action="edit-note" data-id="${s.id}">Изменить</button><div class="note-content hidden" data-note="${s.id}">${escapeText(s.note)}</div><div class="note-edit hidden" data-note-edit="${s.id}"><textarea rows="3" maxlength="2000">${escapeText(s.note)}</textarea><div class="button-row"><button class="primary-button" data-action="save-note" data-id="${s.id}">Сохранить</button><button class="secondary-button" data-action="delete-note" data-id="${s.id}">Удалить пометку</button></div></div>` : `<button class="note-toggle" data-action="create-note" data-id="${s.id}">+ Добавить пометку</button><div class="note-edit hidden" data-note-edit="${s.id}"><textarea rows="3" maxlength="2000" placeholder="Дополнительная информация…"></textarea><div class="button-row"><button class="primary-button" data-action="save-note" data-id="${s.id}">Сохранить</button><button class="secondary-button" data-action="cancel-note" data-id="${s.id}">Отмена</button></div></div>`}</div>`;
+        const pending = s.tasks.filter(t=>!t.done).length;
+        const taskHint = s.tasks.length ? `${pending ? `${pending} невыполн.` : "всё выполнено"} из ${s.tasks.length}` : "заданий нет";
+        card.innerHTML = `<details class="subject-details" data-subject-id="${s.id}" ${previouslyOpen.has(s.id) ? "open" : ""}>
+          <summary>
+            <div class="subject-summary-main">
+              <div class="subject-summary-name">${escapeText(s.name)}</div>
+              <div class="subject-summary-time">${escapeText(s.start)}–${escapeText(s.end)}${s.tasks.length ? ` · ${escapeText(taskHint)}` : ""}</div>
+            </div>
+          </summary>
+          <div class="subject-details-content">
+            <div class="subject-top"><div class="subject-main">
+              <div class="subject-meta">${escapeText(extra)}${s.weekType!=="каждую"?" · "+escapeText(s.weekType):""}</div>
+            </div><div class="subject-actions">
+              <button class="mini-button" data-action="edit-subject" data-id="${s.id}" title="Изменить" aria-label="Изменить предмет">✎</button>
+              <button class="mini-button" data-action="copy-subject" data-id="${s.id}" title="Копировать" aria-label="Копировать предмет">⧉</button>
+              <button class="mini-button" data-action="delete-subject" data-id="${s.id}" title="Удалить" aria-label="Удалить предмет">×</button>
+            </div></div>
+            <div class="task-area"><p class="task-heading">Задания</p><ul class="task-list">${s.tasks.map(t=>taskMarkup(t,"subject",s.id)).join("") || '<li class="muted">Заданий пока нет.</li>'}</ul>
+              <div class="add-task-row"><input data-role="new-subject-task" data-id="${s.id}" placeholder="Что нужно сделать к занятию?" aria-label="Новое задание"><button class="primary-button" data-action="add-subject-task" data-id="${s.id}">Добавить</button></div>
+            </div>
+            <div class="note-area">${s.note ? `<button class="note-toggle" data-action="toggle-note" data-id="${s.id}">Показать пометку ▾</button><div class="note-content hidden" data-note="${s.id}">${escapeText(s.note)}</div><div class="note-edit hidden" data-note-edit="${s.id}"><textarea rows="3" maxlength="2000">${escapeText(s.note)}</textarea><div class="button-row"><button class="primary-button" data-action="save-note" data-id="${s.id}">Сохранить</button><button class="secondary-button" data-action="delete-note" data-id="${s.id}">Удалить пометку</button></div></div>` : `<button class="note-toggle" data-action="create-note" data-id="${s.id}">+ Добавить пометку</button><div class="note-edit hidden" data-note-edit="${s.id}"><textarea rows="3" maxlength="2000" placeholder="Дополнительная информация…"></textarea><div class="button-row"><button class="primary-button" data-action="save-note" data-id="${s.id}">Сохранить</button><button class="secondary-button" data-action="cancel-note" data-id="${s.id}">Отмена</button></div></div>`}</div>
+          </div>
+        </details>`;
         group.append(card);
       });
       root.append(group);
@@ -170,6 +187,11 @@
   function addSubjectTask(id, text) {
     const s=findSubject(id); if(!s || !text.trim())return;
     s.tasks.push({id:uid(),text:text.trim(),done:false}); save(); renderSchedule();
+    const cards = document.querySelectorAll(".subject-details");
+    cards.forEach(card => {
+      const action = card.querySelector(`[data-action="add-subject-task"][data-id="${CSS.escape(id)}"]`);
+      if (action) card.open = true;
+    });
   }
   function addImportantTask(id,text) {
     const item=findImportant(id); if(!item || !text.trim())return;
@@ -245,7 +267,6 @@
   document.querySelectorAll(".nav-item").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.view)));
   $("prevWeek").addEventListener("click",()=>{displayedWeek=addDays(displayedWeek,-7);ensureWeek(displayedWeek);renderMain();});
   $("nextWeek").addEventListener("click",()=>{displayedWeek=addDays(displayedWeek,7);ensureWeek(displayedWeek);renderMain();});
-  $("todayButton").addEventListener("click",()=>{displayedWeek=startOfWeek(new Date());ensureWeek(displayedWeek);showView("main");renderMain();});
   $("pickDateButton").addEventListener("click",()=>{ $("datePicker").showPicker ? $("datePicker").showPicker() : $("datePicker").click(); });
   $("datePicker").addEventListener("change",e=>goToDate(e.target.value));
   $("toggleImportant").addEventListener("click",()=>{state.settings.importantVisible=!state.settings.importantVisible;save();renderMain();});
