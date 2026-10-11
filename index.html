@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f5f2">
+  <title>Учебный планировщик</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <button id="menuButton" class="icon-button" aria-label="Открыть меню">☰</button>
+    <div class="heading">
+      <h1>Учёба</h1>
+      <p id="currentDate" class="muted"></p>
+    </div>
+    <button id="todayButton" class="small-button">Сегодня</button>
+  </header>
+
+  <div class="weekbar">
+    <button id="prevWeek" class="icon-button" aria-label="Предыдущая неделя">‹</button>
+    <div class="week-label">
+      <strong id="weekRange">Неделя</strong>
+      <span id="weekType" class="week-pill"></span>
+    </div>
+    <button id="nextWeek" class="icon-button" aria-label="Следующая неделя">›</button>
+    <button id="pickDateButton" class="small-button">Дата</button>
+    <input id="datePicker" type="date" class="visually-hidden" aria-label="Выбрать дату">
+  </div>
+
+  <main id="mainView" class="page">
+    <section id="importantSection" class="section">
+      <div class="section-heading">
+        <h2>Важное</h2>
+        <div class="inline-actions">
+          <button id="toggleImportant" class="text-button">Скрыть</button>
+          <button id="addImportantButton" class="primary-button">+ Добавить</button>
+        </div>
+      </div>
+      <div id="importantList"></div>
+      <p id="importantEmpty" class="empty-note">Здесь будут дела, которые важно держать перед глазами.</p>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <h2>Расписание</h2>
+        <button id="addSubjectButton" class="primary-button">+ Предмет</button>
+      </div>
+      <div id="scheduleList"></div>
+    </section>
+  </main>
+
+  <main id="archiveView" class="page hidden">
+    <div class="section-heading"><h2>Архив важных дел</h2></div>
+    <div id="archiveList"></div>
+    <p id="archiveEmpty" class="empty-note">Завершённых дел пока нет.</p>
+  </main>
+
+  <main id="settingsView" class="page hidden">
+    <section class="section">
+      <h2>Настройки календаря</h2>
+      <p class="muted">Укажите дату, которая относится к известному вам типу недели. Дальше типы будут чередоваться автоматически.</p>
+      <label class="field">Опорная дата
+        <input id="anchorDate" type="date">
+      </label>
+      <label class="field">Тип недели для этой даты
+        <select id="anchorType">
+          <option value="числитель">Числитель</option>
+          <option value="знаменатель">Знаменатель</option>
+        </select>
+      </label>
+      <button id="saveCalendarSettings" class="primary-button">Сохранить настройки</button>
+    </section>
+    <section class="section">
+      <h2>Резервная копия</h2>
+      <p class="muted">Экспорт сохраняет расписание, историю недель, важные дела и настройки в JSON-файл.</p>
+      <div class="button-row">
+        <button id="exportButton" class="primary-button">Экспортировать JSON</button>
+        <button id="importButton" class="secondary-button">Импортировать JSON</button>
+        <input id="importFile" type="file" accept=".json,application/json" class="visually-hidden">
+      </div>
+    </section>
+    <section class="section">
+      <h2>О данных</h2>
+      <p class="muted">Данные хранятся в этом браузере на этом устройстве. GitHub Pages не синхронизирует их автоматически между телефоном и компьютером. Для переноса используйте резервную копию.</p>
+    </section>
+  </main>
+
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <div class="drawer-head"><strong>Меню</strong><button id="closeMenu" class="icon-button" aria-label="Закрыть меню">×</button></div>
+    <button class="nav-item" data-view="main">Главная / Текущая неделя</button>
+    <button class="nav-item" data-view="calendar">Календарь и история недель</button>
+    <button class="nav-item" data-view="archive">Архив важных дел</button>
+    <button class="nav-item" data-view="settings">Настройки</button>
+    <p class="drawer-note">Изменения сохраняются автоматически.</p>
+  </aside>
+  <div id="scrim" class="scrim"></div>
+
+  <dialog id="subjectDialog">
+    <form id="subjectForm" class="dialog-form">
+      <div class="dialog-heading"><h2 id="subjectDialogTitle">Новый предмет</h2><button type="button" class="icon-button close-dialog">×</button></div>
+      <input id="subjectId" type="hidden">
+      <label class="field">Название предмета<input id="subjectName" maxlength="120" required></label>
+      <div class="form-grid">
+        <label class="field">День недели<select id="subjectDay"><option value="1">Понедельник</option><option value="2">Вторник</option><option value="3">Среда</option><option value="4">Четверг</option><option value="5">Пятница</option><option value="6">Суббота</option><option value="0">Воскресенье</option></select></label>
+        <label class="field">Тип недели<select id="subjectWeek"><option value="каждую">Каждую неделю</option><option value="числитель">Числитель</option><option value="знаменатель">Знаменатель</option></select></label>
+      </div>
+      <div class="form-grid">
+        <label class="field">Начало<input id="subjectStart" type="time" required></label>
+        <label class="field">Окончание<input id="subjectEnd" type="time" required></label>
+      </div>
+      <label class="field">Тип занятия<select id="subjectKind"><option>Лекция</option><option>Практика</option><option>Лабораторная работа</option><option>Семинар</option><option>Другое</option></select></label>
+      <label class="field">Формат<select id="subjectPlaceType"><option value="audience">Аудитория</option><option value="remote">Дистанционно</option></select></label>
+      <label class="field" id="placeLabel">Аудитория и корпус<input id="subjectPlace" maxlength="180" placeholder="Например, 305, корпус 2"></label>
+      <label class="field">Ссылка / комментарий к месту<input id="subjectLink" maxlength="500" placeholder="Необязательно"></label>
+      <label class="field">Дополнительная пометка<textarea id="subjectNote" rows="2" maxlength="2000" placeholder="Необязательно"></textarea></label>
+      <div class="button-row"><button class="primary-button" type="submit">Сохранить предмет</button><button class="secondary-button" type="button" id="copySubjectButton">Копировать на другую неделю</button></div>
+      <p class="muted tiny">Изменение постоянного расписания не переписывает уже сохранённые недельные снимки.</p>
+    </form>
+  </dialog>
+
+  <dialog id="importantDialog">
+    <form id="importantForm" class="dialog-form">
+      <div class="dialog-heading"><h2 id="importantDialogTitle">Новое важное дело</h2><button type="button" class="icon-button close-dialog">×</button></div>
+      <input id="importantId" type="hidden">
+      <label class="field">Название дела<input id="importantName" maxlength="160" required placeholder="Например, Дипломная работа"></label>
+      <button type="submit" class="primary-button">Сохранить дело</button>
+    </form>
+  </dialog>
+
+  <dialog id="copyDialog">
+    <form id="copyForm" class="dialog-form">
+      <div class="dialog-heading"><h2>Копировать предмет</h2><button type="button" class="icon-button close-dialog">×</button></div>
+      <input id="copySourceId" type="hidden">
+      <label class="field">Дата недели назначения<input id="copyTargetDate" type="date" required></label>
+      <p class="muted tiny">Создаст отдельную копию предмета в выбранной неделе вместе с заданиями и пометкой. Исходная неделя останется без изменений.</p>
+      <button type="submit" class="primary-button">Создать копию</button>
+    </form>
+  </dialog>
+
+  <dialog id="taskDialog">
+    <form id="taskForm" class="dialog-form">
+      <div class="dialog-heading"><h2 id="taskDialogTitle">Задание</h2><button type="button" class="icon-button close-dialog">×</button></div>
+      <input id="taskSubjectId" type="hidden"><input id="taskId" type="hidden">
+      <label class="field">Текст задания<textarea id="taskText" rows="4" maxlength="2000" required></textarea></label>
+      <button type="submit" class="primary-button">Сохранить задание</button>
+    </form>
+  </dialog>
+
+  <dialog id="importantTaskDialog">
+    <form id="importantTaskForm" class="dialog-form">
+      <div class="dialog-heading"><h2 id="importantTaskDialogTitle">Задание важного дела</h2><button type="button" class="icon-button close-dialog">×</button></div>
+      <input id="importantTaskParentId" type="hidden"><input id="importantTaskId" type="hidden">
+      <label class="field">Текст задания<textarea id="importantTaskText" rows="3" maxlength="2000" required></textarea></label>
+      <button type="submit" class="primary-button">Сохранить задание</button>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="script.js"></script>
+</body>
+</html>
